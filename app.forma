@@ -1,0 +1,13 @@
+forma brand
+
+axes
+  preset = custom_blue | deep_purple
+
+theme
+  accent.brand = light-dark(#2563eb, #3b82f6)
+    when preset=deep_purple: light-dark(#6750a4, #7c5dfa)
+  surface.card = light-dark(#f4f6f9, #181a20)
+  surface.tint = light-dark(#e8f0fe, #1e293b)
+    when preset=deep_purple: light-dark(#f3edff, #251f38)
+  text.muted = light-dark(#5f6368, #9aa0a6)  pair=surface.card
+  ink.on-brand = #ffffff  scheme=fixed

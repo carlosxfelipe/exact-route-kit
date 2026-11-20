@@ -1,0 +1,45 @@
+test "login gates tabs until signing in, then tabs and routes work"
+  expect state signedIn == false
+  expect tree has "login-submit"
+  tap "login-fill-demo"
+  tap "login-submit"
+  clock data
+  clock settle
+  expect state signedIn == true
+  expect tree has "home-banner"
+  tap "home-feature-routing"
+  clock settle
+  expect text "detail-title" == "Tabs & Stack Navigation"
+  tap "detail-back"
+  clock settle
+  tap "tab-explore"
+  expect state nav.tab == "explore"
+  tap "explore-filled-btn"
+  expect state demoCount == 4
+  tap "tab-profile"
+  expect state nav.tab == "profile"
+  tap "profile-edit-btn"
+  clock settle
+  type "edit-name" "Carlos"
+  tap "edit-save"
+  clock settle
+  expect text "profile-name" == "Carlos"
+  expect tree has "toast"
+  clock +3000
+  expect tree missing "toast"
+
+test "theme mode, preset, and sign out work"
+  tap "login-fill-demo"
+  tap "login-submit"
+  clock data
+  clock settle
+  tap "tab-profile"
+  type "profile-theme-mode" "dark"
+  expect state themeMode == "dark"
+  type "profile-theme-preset" "deep_purple"
+  expect state themePreset == "deep_purple"
+  tap "profile-signout-btn"
+  tap "signout-confirm"
+  clock settle
+  expect state signedIn == false
+  expect tree has "login-submit"

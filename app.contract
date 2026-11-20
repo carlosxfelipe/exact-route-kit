@@ -1,0 +1,373 @@
+// Exact Route Kit: a starter kit inspired by expo-route-kit, built with Exact.
+// Includes: optional auth gate, 3 persistent tabs (Home, Explore, Profile),
+// stack detail routes, modal Edit Profile sheet, Light/Dark/System scheme,
+// Custom Blue / Deep Purple Forma presets, and native confirmation dialogs.
+use Badge, DoneMark, EmptyState, RowText, StatBar, SummaryCard from "exact:content"
+
+routes nav
+  tab home "/"
+    detail "/detail/:id"
+  tab explore "/explore"
+  tab profile "/profile"
+    editProfile "/profile/edit"
+
+shape Feature
+  id: string
+  title: string
+  subtitle: string
+  summary: string
+
+shape AuthReply
+  ok: bool
+  error: string
+  name: string
+
+fn featureById(items: Feature[], id: string): option<Feature> = first(items.filter(f => f.id == id))
+fn featureTitle(items: Feature[], id: string): string = match featureById(items, id) { case some(f) => f.title, case none => "Detail" }
+fn matchesFeature(f: Feature, q: string): bool = f.title.toLowerCase().includes(q.trim().toLowerCase()) or f.subtitle.toLowerCase().includes(q.trim().toLowerCase())
+
+component ExactRouteKit
+  // Set to true to skip the login flow and start directly on the main tabs.
+  state signedIn = false persist
+  state email = ""
+  state password = ""
+  state authError = ""
+
+  state profileName = "User Profile" persist
+  state profileEmail = "user@example.com" persist
+  state draftName = ""
+  state draftEmail = ""
+  state notificationsEnabled = true persist
+  state themeMode = "system" persist
+  state themePreset = "custom_blue" persist
+
+  state toast = ""
+  state timeframe = "Day"
+  state exploreSearch = ""
+  state demoInput = ""
+  state demoSwitch = true
+  state demoCount = 3
+  state showEmptyDemo = false
+
+  resource features = loadFeatures() as shape Feature[] else empty()
+  mutation authResult as shape AuthReply then afterAuth
+
+  derive filteredFeatures = features.filter(f => matchesFeature(f, exploreSearch))
+  derive unreadCount = notificationsEnabled ? 3 : 0
+
+  task clearToast when toast != ""
+    after(2500, dismissToast)
+
+  action dismissToast
+    toast = ""
+
+  action editEmail(v: string)
+    email = v
+    authError = ""
+
+  action editPassword(v: string)
+    password = v
+    authError = ""
+
+  action fillDemo
+    email = "user@example.com"
+    password = "password123"
+    authError = ""
+
+  action submitLogin
+    if not pending(authResult)
+      send authResult = signInCheck(email, password)
+
+  action afterAuth
+    match authResult
+      case some(reply)
+        if reply.ok
+          signedIn = true
+          profileEmail = email.trim()
+          password = ""
+          authError = ""
+          nav = select(nav, "home")
+        else
+          authError = reply.error
+      case none
+        authError = "Could not sign in."
+
+  action pick(name: string)
+    nav = select(nav, name)
+
+  action follow(url: string)
+    nav = go(nav, url)
+
+  action back
+    nav = back(nav)
+
+  action notifyTap
+    toast = notificationsEnabled ? "3 new notifications" : "Notifications are paused"
+
+  action setTimeframe(v: string)
+    timeframe = v
+
+  action setExploreSearch(v: string)
+    exploreSearch = v
+
+  action setDemoInput(v: string)
+    demoInput = v
+
+  action setDemoSwitch(on: bool)
+    demoSwitch = on
+
+  action incrementDemo
+    demoCount = demoCount + 1
+
+  action toggleEmptyDemo
+    showEmptyDemo = not showEmptyDemo
+
+  action setNotifications(on: bool)
+    notificationsEnabled = on
+
+  action openEditProfile
+    draftName = profileName
+    draftEmail = profileEmail
+    nav = push(nav, "/profile/edit")
+
+  action editDraftName(v: string)
+    draftName = v
+
+  action editDraftEmail(v: string)
+    draftEmail = v
+
+  action saveProfile
+    if draftName.trim() != "" and draftEmail.trim() != ""
+      profileName = draftName.trim()
+      profileEmail = draftEmail.trim()
+      nav = back(nav)
+      toast = "Profile updated"
+
+  action setThemeMode(mode: string)
+    themeMode = mode
+    setScheme(mode)
+
+  action setThemePreset(preset: string)
+    themePreset = preset
+    setMode("preset", preset)
+
+  action confirmSignOut
+    signedIn = false
+    email = ""
+    password = ""
+    authError = ""
+    toast = ""
+    nav = select(nav, "home")
+
+  view
+    main testId="root" accent-color="accent.brand" -exact-mode=(themePreset == "deep_purple" ? "preset=deep_purple" : "preset=custom_blue") navigationKey=(signedIn ? `${top(nav).id}` : "login") navigationBack="back" navigate=follow width="100%" height="100%" display="flex" flex-direction="column" position="relative"
+      if not signedIn
+        column flex=1 min-height=0 display="flex" flex-direction="column"
+          scroll flex=1 min-height=0
+            column max-width="26.25rem" width="100%" box-sizing="border-box" margin="0 auto" padding=24 gap=16
+              column padding=16 gap=8 background-color="surface.tint" border-radius=16
+                row gap=10 align-items="center"
+                  image "symbol:layers" font="-exact-title1" aria-hidden=true
+                  text "Exact Route Kit" font="-exact-title2" role="heading" aria-level=1
+                text "Sign in to explore tabs, stack routing, Forma themes, and native controls." color="text.muted"
+              list appearance="auto" listStyle="inset-grouped"
+                section
+                  row
+                    input value=email input=editEmail placeholder="Email" aria-label="Email" inputmode="email" autocapitalize="none" testId="login-email" flex=1 min-width=0
+                  row
+                    input type="password" value=password input=editPassword submit=submitLogin placeholder="Password" aria-label="Password" testId="login-password" flex=1 min-width=0
+                  footer
+                    text (authError != "" ? authError : "Demo: user@example.com / password123") color=(authError != "" ? "-exact-system-red" : "-exact-secondary-label") overflow-wrap="break-word" testId="login-error"
+              row gap=8
+                button press=submitLogin buttonStyle="filled" flex=1 disabled=pending(authResult) testId="login-submit"
+                  text (pending(authResult) ? "Signing In..." : "Sign In")
+                button press=fillDemo testId="login-fill-demo"
+                  text "Fill Demo"
+
+      column flex=1 min-height=0 position="relative" display=(signedIn ? "flex" : "none")
+        for t in nav.tabs key=t.name
+          column role="tabpanel" id=`panel-${t.name}` position="absolute" inset=0
+            for e in t.stack key=e.id
+              if e.name == "editProfile"
+                column navigationKey=`${e.id}` navigationPresentation="modal" navigationScroll=`content-${e.id}` position="absolute" inset=0 display="flex" flex-direction="column"
+                  header display="flex" align-items="center" padding="8px 16px" gap=8
+                    button id="back" press=back aria-label="Cancel" testId="edit-cancel"
+                      image "symbol:close"
+                    text "Edit Profile" role="heading" aria-level=2 flex=1
+                    button press=saveProfile buttonStyle="filled" disabled=(draftName.trim() == "" or draftEmail.trim() == "") testId="edit-save"
+                      text "Save"
+                  list id=`content-${e.id}` appearance="auto" listStyle="inset-grouped" flex=1 min-height=0
+                    section
+                      row
+                        text "Name"
+                        input value=draftName input=editDraftName placeholder="Your name" aria-label="Name" testId="edit-name" flex=1 min-width=0
+                      row
+                        text "Email"
+                        input value=draftEmail input=editDraftEmail submit=saveProfile placeholder="you@example.com" aria-label="Email" testId="edit-email" flex=1 min-width=0
+              else
+                column navigationKey=`${e.id}` navigationScroll=`content-${e.id}` position="absolute" inset=0 display="flex" flex-direction="column"
+                  header display="flex" flex-wrap="wrap" align-items="center" gap=8 padding="8px 16px"
+                    if e.name == "detail"
+                      button id="back" press=back aria-label="Back" testId="detail-back"
+                        image "symbol:back"
+                    text (e.name == "home" ? "Home" : e.name == "explore" ? "Explore" : e.name == "profile" ? "Profile" : featureTitle(features, e.params.id)) role="heading" aria-level=(e.name == "detail" ? 2 : 1) flex=1
+                    if e.name == "home"
+                      button press=notifyTap aria-label=`Notifications, ${unreadCount}` testId="home-notifications"
+                        image "symbol:notifications"
+                        if unreadCount > 0
+                          Badge(label=`${unreadCount}`, tint=some("-exact-system-red"))
+                    if e.name == "explore"
+                      input type="search" value=exploreSearch input=setExploreSearch placeholder="Search components & topics" aria-label="Search Explore" testId="explore-search" width="100%"
+
+                  if e.name == "home"
+                    scroll id=`content-${e.id}` flex=1 min-height=0
+                      column padding=16 gap=16
+                        column padding=16 gap=8 background-color="surface.tint" border-radius=16 testId="home-banner"
+                          row align-items="center" justify-content="space-between"
+                            text "Welcome to Exact Route Kit" font="-exact-headline"
+                            Badge(label="Exact", tint=some("accent.brand"))
+                          text "Starter template with Contract UI, TypeScript data, Forma themes, and persistent tab stacks." color="text.muted"
+                        SummaryCard(label="Active Tabs", value="3", detail=`Signed in as ${profileName}`, progress=some(1), symbol=some("symbol:layers"))
+                        text "Quick Navigation" font="-exact-headline"
+                        list appearance="auto" listStyle="inset-grouped"
+                          section
+                            button press=pick("explore") testId="home-go-explore"
+                              RowText(title="Explore", detail="Browse Contract controls and exact:content", value=none)
+                              image "symbol:forward-chevron"
+                            button press=pick("profile") testId="home-go-profile"
+                              RowText(title="Profile", detail="Theme presets, scheme, and account settings", value=none)
+                              image "symbol:forward-chevron"
+                          section
+                            for f in features key=f.id
+                              link href=path("detail", f.id) testId=`home-feature-${f.id}`
+                                RowText(title=f.title, detail=f.subtitle, value=none)
+                                image "symbol:forward-chevron"
+
+                  else if e.name == "detail"
+                    scroll id=`content-${e.id}` flex=1 min-height=0
+                      column padding=16 gap=16
+                        match featureById(features, e.params.id)
+                          case some(feat)
+                            column padding=16 gap=8 background-color="surface.card" border-radius=14
+                              text feat.title font="-exact-headline" overflow-wrap="break-word" testId="detail-title"
+                              text feat.subtitle color="text.muted"
+                            text feat.summary testId="detail-summary"
+                          case none
+                            EmptyState(symbol="symbol:alert", title="Route Not Found", message="No matching feature was found for this route.")
+
+                  else if e.name == "explore"
+                    scroll id=`content-${e.id}` flex=1 min-height=0
+                      column padding=16 gap=16
+                        if showEmptyDemo
+                          EmptyState(symbol="symbol:sparkles", title="Empty State Preview", message="Tap below to restore the component showcase.")
+                            button press=toggleEmptyDemo buttonStyle="filled" testId="explore-restore"
+                              text "Show Components"
+                        else
+                          text "Buttons & Counter" font="-exact-headline"
+                          row gap=8 flex-wrap="wrap"
+                            button press=incrementDemo buttonStyle="filled" testId="explore-filled-btn"
+                              text `Filled (${demoCount})`
+                            button press=toggleEmptyDemo testId="explore-empty-btn"
+                              text "Preview Empty"
+                            button commandfor="explore-alert" command="show-modal" destructive=true testId="explore-alert-btn"
+                              text "Alert Dialog"
+
+                          text "exact:content & Progress" font="-exact-headline"
+                          StatBar(label=`${timeframe} Progress`, value=`${demoCount}/10`, fraction=demoCount / 10, tint=none)
+                          row justify-content="space-between"
+                            DoneMark(caption="Contract", done=true)
+                            DoneMark(caption="TypeScript", done=true)
+                            DoneMark(caption="Forma", done=demoSwitch)
+
+                          text "Native Inputs" font="-exact-headline"
+                          list appearance="auto" listStyle="inset-grouped"
+                            section
+                              row
+                                text "Timeframe"
+                                select value=timeframe change=setTimeframe aria-label="Timeframe" testId="explore-timeframe"
+                                  option "Day" value="Day"
+                                  option "Week" value="Week"
+                                  option "Month" value="Month"
+                              row
+                                text "Live Flag"
+                                input type="checkbox" switch checked=demoSwitch change=setDemoSwitch aria-label="Live Flag" testId="explore-switch"
+                              row
+                                input value=demoInput input=setDemoInput placeholder="Type something..." aria-label="Sample input" testId="explore-input" flex=1 min-width=0
+
+                          text "Filtered Topics" font="-exact-headline"
+                          if filteredFeatures.length == 0
+                            EmptyState(symbol="symbol:search", title="No Matches", message="Try searching for tabs, forma, or content.")
+                          else
+                            list appearance="auto" listStyle="inset-grouped"
+                              section
+                                for f in filteredFeatures key=f.id
+                                  row testId=`explore-topic-${f.id}`
+                                    RowText(title=f.title, detail=f.subtitle, value=none)
+
+                  else
+                    scroll id=`content-${e.id}` flex=1 min-height=0
+                      column padding=16 gap=16
+                        row padding=16 gap=12 flex-wrap="wrap" align-items="center" background-color="surface.card" border-radius=14 testId="profile-card"
+                          column width="3rem" height="3rem" border-radius="1.5rem" background-color="accent.brand" align-items="center" justify-content="center"
+                            image "symbol:person-fill" color="ink.on-brand" aria-hidden=true
+                          column flex="1 1 12rem" min-width=0 gap=2
+                            text profileName font="-exact-headline" overflow-wrap="break-word" testId="profile-name"
+                            text profileEmail color="text.muted" overflow-wrap="break-word" testId="profile-email"
+
+                        list appearance="auto" listStyle="inset-grouped"
+                          section
+                            header
+                              text "Account"
+                            button press=openEditProfile testId="profile-edit-btn"
+                              RowText(title="Edit Profile", detail="Update display name and email", value=none)
+                              image "symbol:forward-chevron"
+                            row
+                              text "Notifications"
+                              input type="checkbox" switch checked=notificationsEnabled change=setNotifications aria-label="Notifications" testId="profile-notifications-switch"
+                          section
+                            header
+                              text "Appearance"
+                            row
+                              text "Theme Mode"
+                              select value=themeMode change=setThemeMode aria-label="Theme Mode" testId="profile-theme-mode"
+                                option "System" value="system"
+                                option "Light" value="light"
+                                option "Dark" value="dark"
+                            row
+                              text "Color Preset"
+                              select value=themePreset change=setThemePreset aria-label="Color Preset" testId="profile-theme-preset"
+                                option "Custom Blue" value="custom_blue"
+                                option "Deep Purple" value="deep_purple"
+                          section
+                            button commandfor="signout-dialog" command="show-modal" destructive=true testId="profile-signout-btn"
+                              image "symbol:sign-out" aria-hidden=true
+                              text "Sign Out"
+
+      if toast != ""
+        row margin="0 16px 8px 16px" padding="10px 14px" gap=8 flex-wrap="wrap" border-radius=12 background-color="surface.card" justify-content="space-between" align-items="center" testId="toast"
+          text toast flex="1 1 12rem" min-width=0
+          button press=dismissToast aria-label="Dismiss"
+            image "symbol:close"
+
+      row role="tablist" testId="tabs" display=(signedIn ? "flex" : "none")
+        button role="tab" aria-controls="panel-home" aria-selected=(nav.tab == "home") press=pick("home") testId="tab-home" flex=1
+          image (nav.tab == "home" ? "symbol:home-fill" : "symbol:home")
+          text "Home"
+        button role="tab" aria-controls="panel-explore" aria-selected=(nav.tab == "explore") press=pick("explore") testId="tab-explore" flex=1
+          image "symbol:layers"
+          text "Explore"
+        button role="tab" aria-controls="panel-profile" aria-selected=(nav.tab == "profile") press=pick("profile") testId="tab-profile" flex=1
+          image (nav.tab == "profile" ? "symbol:person-fill" : "symbol:person")
+          text "Profile"
+
+      dialog id="explore-alert" role="alertdialog" aria-label="Exact Alert"
+        text "This is a native confirmation/alert dialog rendered by Exact."
+        button commandfor="explore-alert" command="close" testId="explore-alert-ok"
+          text "OK"
+
+      dialog id="signout-dialog" role="alertdialog" aria-label="Sign out?"
+        text "You will return to the login screen."
+        button press=confirmSignOut destructive=true commandfor="signout-dialog" command="close" testId="signout-confirm"
+          text "Sign Out"
+        button commandfor="signout-dialog" command="close" testId="signout-cancel"
+          text "Cancel"

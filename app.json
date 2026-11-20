@@ -1,0 +1,20 @@
+{
+  "$schema": ".exact/checkout/scripts/app.schema.json",
+  "name": "Exact Route Kit",
+  "short_name": "Exact Route Kit",
+  "id": "com.carlosxfelipe.exactroutekit",
+  "start_url": "/",
+  "display": "standalone",
+  "app": {
+    "id": "com.carlosxfelipe.exactroutekit",
+    "name": "Exact Route Kit"
+  },
+  "host": {
+    "web": {}
+  },
+  "deploy": {
+    "store": {
+      "web": "0"
+    }
+  }
+}
