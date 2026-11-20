@@ -4,7 +4,7 @@ Starter template inspired by [expo-route-kit](https://github.com/carlosxfelipe/e
 
 ## What's included
 
-- **Authentication gate** (`signedIn` in [`app.contract`](./app.contract), `signInCheck` in [`app.ts`](./app.ts)): starts on Login (`Fill Demo` or email/password validation) and switches to the main tabs once signed in. Set `state signedIn = true persist` in [`app.contract`](./app.contract) to skip login during development.
+- **Authentication gate** (`signedIn` at [`app.contract#L31`](./app.contract#L31), `signInCheck` at [`app.ts#L31`](./app.ts#L31)): starts on Login (`Fill Demo` or email/password validation) and switches to the main tabs once signed in. Set `state signedIn = true persist` at [`app.contract#L31`](./app.contract#L31) to skip login during development.
 - **Persistent 3-tab navigation (`routes nav`)**:
   - **Home** (`/`): welcome banner, `SummaryCard`, quick-navigation rows, notifications badge with auto-dismiss toast, and push navigation to **Detail** (`/detail/:id`).
   - **Explore** (`/explore`): live search filter, `StatBar`, `DoneMark`, native `select`, `switch`, `input`, empty-state toggle, and native `alertdialog`.

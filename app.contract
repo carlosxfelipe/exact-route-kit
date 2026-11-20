@@ -212,10 +212,12 @@ component ExactRouteKit
                         image "symbol:back"
                     text (e.name == "home" ? "Home" : e.name == "explore" ? "Explore" : e.name == "profile" ? "Profile" : featureTitle(features, e.params.id)) role="heading" aria-level=(e.name == "detail" ? 2 : 1) flex=1
                     if e.name == "home"
-                      button press=notifyTap aria-label=`Notifications, ${unreadCount}` testId="home-notifications"
-                        image "symbol:notifications"
-                        if unreadCount > 0
-                          Badge(label=`${unreadCount}`, tint=some("-exact-system-red"))
+                      button press=notifyTap appearance="none" position="relative" width="2.5rem" height="2.5rem" padding=0 display="flex" align-items="center" justify-content="center" aria-label=`Notifications, ${unreadCount}` testId="home-notifications"
+                        view position="relative" display="flex" align-items="center" justify-content="center"
+                          image "symbol:notifications" font="-exact-title3"
+                          if unreadCount > 0
+                            row position="absolute" top="-0.3rem" right="-0.45rem" min-width="1.05rem" height="1.05rem" padding="0 0.25rem" box-sizing="border-box" border-radius="999px" background-color="-exact-system-red" align-items="center" justify-content="center"
+                              text `${unreadCount}` color="ink.on-brand" font="-exact-caption2" font-weight=700 font-variant-numeric="tabular-nums" line-height=1
                     if e.name == "explore"
                       input type="search" value=exploreSearch input=setExploreSearch placeholder="Search components & topics" aria-label="Search Explore" testId="explore-search" width="100%"
 

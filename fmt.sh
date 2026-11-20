@@ -29,6 +29,7 @@ run_prettier() {
       ! -path "./AGENTS.md" \
       ! -path "./CLAUDE.md" \
       ! -path "./exact.mjs" \
+      ! -path "./app.contract.d.ts" \
       -type f -print0
   )
 
@@ -54,7 +55,7 @@ fi
 if [ ${#PRETTIER_CMD[@]} -eq 0 ]; then
   echo "⚠️  Neither 'prettier' nor 'npx' found. Skipping TypeScript/JavaScript/CSS/Markdown formatting."
 else
-  echo "✨ Formatting repository files with ${PRETTIER_CMD[*]} (excluding AGENTS.md, CLAUDE.md, exact.mjs)..."
+  echo "✨ Formatting repository files with ${PRETTIER_CMD[*]} (excluding generated files)..."
   run_prettier "${PRETTIER_CMD[@]}"
 fi
 
