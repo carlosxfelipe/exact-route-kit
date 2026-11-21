@@ -157,38 +157,37 @@ component ExactRouteKit
     password = ""
     authError = ""
     toast = ""
-    nav = select(nav, "home")
+    nav = go(select(nav, "home"), "/")
 
   view
     main testId="root" accent-color="accent.brand" -exact-mode=(themePreset == "deep_purple" ? "preset=deep_purple" : "preset=custom_blue") navigationKey=(signedIn ? `${top(nav).id}` : "login") navigationBack="back" navigate=follow width="100%" height="100%" display="flex" flex-direction="column" position="relative"
-      if not signedIn
-        column flex=1 min-height=0 display="flex" flex-direction="column"
-          scroll flex=1 min-height=0
-            column max-width="26.25rem" width="100%" box-sizing="border-box" margin="0 auto" padding=24 gap=16
-              column padding=16 gap=8 background-color="surface.tint" border-radius=16
-                row gap=10 align-items="center"
-                  image "symbol:layers" font="-exact-title1" aria-hidden=true
-                  text "Exact Route Kit" font="-exact-title2" role="heading" aria-level=1
-                text "Sign in to explore tabs, stack routing, Forma themes, and native controls." color="text.muted"
-              list appearance="auto" listStyle="inset-grouped"
-                section
-                  row
-                    input value=email input=editEmail placeholder="Email" aria-label="Email" inputmode="email" autocapitalize="none" testId="login-email" flex=1 min-width=0
-                  row
-                    input type="password" value=password input=editPassword submit=submitLogin placeholder="Password" aria-label="Password" testId="login-password" flex=1 min-width=0
-                  footer
-                    text (authError != "" ? authError : "Demo: user@example.com / password123") color=(authError != "" ? "-exact-system-red" : "-exact-secondary-label") overflow-wrap="break-word" testId="login-error"
-              row gap=8
-                button press=submitLogin buttonStyle="filled" flex=1 disabled=pending(authResult) testId="login-submit"
-                  text (pending(authResult) ? "Signing In..." : "Sign In")
-                button press=fillDemo testId="login-fill-demo"
-                  text "Fill Demo"
-
-      column flex=1 min-height=0 position="relative" display=(signedIn ? "flex" : "none")
+      column flex=1 min-height=0 position="relative"
         for t in nav.tabs key=t.name
-          column role="tabpanel" id=`panel-${t.name}` position="absolute" inset=0
+          column role="tabpanel" id=`panel-${t.name}` position="absolute" inset=0 display=(nav.tab == t.name ? "flex" : "none")
             for e in t.stack key=e.id
-              if e.name == "editProfile"
+              if e.name == "home" and not signedIn
+                column navigationKey=`${e.id}` navigationBar="none" position="absolute" inset=0 display="flex" flex-direction="column"
+                  scroll flex=1 min-height=0
+                    column max-width="26.25rem" width="100%" box-sizing="border-box" margin="0 auto" padding=24 gap=16
+                      column padding=16 gap=8 background-color="surface.tint" border-radius=16
+                        row gap=10 align-items="center"
+                          image "symbol:layers" font="-exact-title1" aria-hidden=true
+                          text "Exact Route Kit" font="-exact-title2" role="heading" aria-level=1
+                        text "Sign in to explore tabs, stack routing, Forma themes, and native controls." color="text.muted"
+                      list appearance="auto" listStyle="inset-grouped" background-color="transparent"
+                        section
+                          row
+                            input value=email input=editEmail placeholder="Email" aria-label="Email" inputmode="email" autocapitalize="none" testId="login-email" flex=1 min-width=0
+                          row
+                            input type="password" value=password input=editPassword submit=submitLogin placeholder="Password" aria-label="Password" testId="login-password" flex=1 min-width=0
+                          footer
+                            text (authError != "" ? authError : "Demo: user@example.com / password123") color=(authError != "" ? "-exact-system-red" : "-exact-secondary-label") overflow-wrap="break-word" testId="login-error"
+                      row gap=8
+                        button press=submitLogin buttonStyle="filled" flex=1 disabled=pending(authResult) testId="login-submit"
+                          text (pending(authResult) ? "Signing In..." : "Sign In")
+                        button press=fillDemo testId="login-fill-demo"
+                          text "Fill Demo"
+              else if e.name == "editProfile"
                 column navigationKey=`${e.id}` navigationPresentation="modal" navigationScroll=`content-${e.id}` position="absolute" inset=0 display="flex" flex-direction="column"
                   header display="flex" align-items="center" padding="8px 16px" gap=8
                     button id="back" press=back aria-label="Cancel" testId="edit-cancel"
@@ -216,8 +215,8 @@ component ExactRouteKit
                         view position="relative" display="flex" align-items="center" justify-content="center"
                           image "symbol:notifications" font="-exact-title3"
                           if unreadCount > 0
-                            row position="absolute" top="-0.3rem" right="-0.45rem" min-width="1.05rem" height="1.05rem" padding="0 0.25rem" box-sizing="border-box" border-radius="999px" background-color="-exact-system-red" align-items="center" justify-content="center"
-                              text `${unreadCount}` color="ink.on-brand" font="-exact-caption2" font-weight=700 font-variant-numeric="tabular-nums" line-height=1
+                            row position="absolute" top="-0.3rem" right="-0.45rem" min-width="1.15rem" min-height="1.15rem" padding="0.05rem 0.3rem" box-sizing="border-box" border-radius="999px" background-color="-exact-system-red" align-items="center" justify-content="center"
+                              text `${unreadCount}` color="ink.on-brand" font="-exact-caption2" font-weight=700 font-variant-numeric="tabular-nums"
                     if e.name == "explore"
                       input type="search" value=exploreSearch input=setExploreSearch placeholder="Search components & topics" aria-label="Search Explore" testId="explore-search" width="100%"
 
@@ -225,13 +224,13 @@ component ExactRouteKit
                     scroll id=`content-${e.id}` flex=1 min-height=0
                       column padding=16 gap=16
                         column padding=16 gap=8 background-color="surface.tint" border-radius=16 testId="home-banner"
-                          row align-items="center" justify-content="space-between"
-                            text "Welcome to Exact Route Kit" font="-exact-headline"
+                          row align-items="center" justify-content="space-between" flex-wrap="wrap" gap=8
+                            text "Welcome to Exact Route Kit" font="-exact-headline" flex="1 1 12rem" min-width=0
                             Badge(label="Exact", tint=some("accent.brand"))
                           text "Starter template with Contract UI, TypeScript data, Forma themes, and persistent tab stacks." color="text.muted"
                         SummaryCard(label="Active Tabs", value="3", detail=`Signed in as ${profileName}`, progress=some(1), symbol=some("symbol:layers"))
                         text "Quick Navigation" font="-exact-headline"
-                        list appearance="auto" listStyle="inset-grouped"
+                        list appearance="auto" listStyle="inset-grouped" background-color="transparent"
                           section
                             button press=pick("explore") testId="home-go-explore"
                               RowText(title="Explore", detail="Browse Contract controls and exact:content", value=none)
@@ -282,7 +281,7 @@ component ExactRouteKit
                             DoneMark(caption="Forma", done=demoSwitch)
 
                           text "Native Inputs" font="-exact-headline"
-                          list appearance="auto" listStyle="inset-grouped"
+                          list appearance="auto" listStyle="inset-grouped" background-color="transparent"
                             section
                               row
                                 text "Timeframe"
@@ -300,7 +299,7 @@ component ExactRouteKit
                           if filteredFeatures.length == 0
                             EmptyState(symbol="symbol:search", title="No Matches", message="Try searching for tabs, forma, or content.")
                           else
-                            list appearance="auto" listStyle="inset-grouped"
+                            list appearance="auto" listStyle="inset-grouped" background-color="transparent"
                               section
                                 for f in filteredFeatures key=f.id
                                   row testId=`explore-topic-${f.id}`
@@ -316,7 +315,7 @@ component ExactRouteKit
                             text profileName font="-exact-headline" overflow-wrap="break-word" testId="profile-name"
                             text profileEmail color="text.muted" overflow-wrap="break-word" testId="profile-email"
 
-                        list appearance="auto" listStyle="inset-grouped"
+                        list appearance="auto" listStyle="inset-grouped" background-color="transparent"
                           section
                             header
                               text "Account"

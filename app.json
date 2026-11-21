@@ -1,4 +1,13 @@
 {
+  "host": {
+    "web": {},
+    "android": {}
+  },
+  "deploy": {
+    "store": {
+      "web": "0"
+    }
+  },
   "$schema": ".exact/checkout/scripts/app.schema.json",
   "name": "Exact Route Kit",
   "short_name": "Exact Route Kit",
@@ -8,13 +17,5 @@
   "app": {
     "id": "com.carlosxfelipe.exactroutekit",
     "name": "Exact Route Kit"
-  },
-  "host": {
-    "web": {}
-  },
-  "deploy": {
-    "store": {
-      "web": "0"
-    }
   }
 }
